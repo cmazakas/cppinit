@@ -86,6 +86,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = os.MkdirAll("test/include/"+proj+"/test", os.ModeDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// add Catch CTest support
 	//
 	cmakeModulesFile, err := createFileWithPath("cmake.modules/ParseAndAddCatchTests.cmake")

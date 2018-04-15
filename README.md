@@ -27,15 +27,24 @@ cd my-new-project
 ./cppinit -name=my-new-project
 
 => creates
-my-new-project/
-  CMakeLists.txt
-  my-new-project.cmake (empty toolchain file)
-  .vscode/
-    settings.json (for VSCode)
-  include/
-    my-new-project
-  test/
-    main.cpp
+C:.
+│   .gitignore
+│   CMakeLists.txt
+│   my-new-project.cmake
+├───.vscode
+│       settings.json
+│
+├───cmake.modules
+│       ParseAndAddCatchTests.cmake
+│
+├───include
+│   └───my-new-project
+└───test
+    │   main.cpp
+    │
+    └───include
+        └───my-new-project
+            └───test
 ```
 
 To purge the current directory,
@@ -48,7 +57,9 @@ To purge the current directory,
 ## For C++ Beginners
 
 It's a goal of this project to make using C++ for newcomers simple and
-straight-forward.
+straight-forward. `cppinit`'s main strength is that it gives users a project
+with some useful include paths already configured so they can begin coding
+without mucking about.
 
 ### Boost
 
@@ -100,5 +111,97 @@ cmake --build .
 now edit and maintain themselves.
 
 The core project is pulled into a "core" lib that is then linked to by the testing binary.
-It defaults to an INTERFACE library by default. This needs to be changed if the
+It defaults to an INTERFACE library. This needs to be changed if the
 core library itself becomes non-header-only.
+
+### Using the empty project by writing your first test
+
+As a good example of what to do with `cppinit`, considering building the sample
+demo files:
+```
+-------------------------------------------------
+test/include/my-new-project/test/integral_add.hpp
+-------------------------------------------------
+
+#include <numeric>
+#include <type_traits>
+
+// we choose to write a constrained templated function
+// that will only add integral types
+//
+template <
+  typename T,
+  typename = std::enable_if_t<std::is_integral<T>::value>
+>
+auto integral_add(T const& a, T const& b) -> T
+{
+  return a + b;
+}
+
+-------------------------------------------------
+test/lifting_add_test.cpp
+-------------------------------------------------
+
+#include <vector>
+#include <numeric>
+#include <boost/hof/lift.hpp>
+#include "my-new-project/test/integral_add.hpp"
+
+#include <catch.hpp>
+
+// we want to use our constrained adding function
+// but we want to make sure we can also use it in
+// higher-order functions
+//
+TEST_CASE("do u even lift?")
+{
+  // 0 + 1 + 2 + 3 + 4 + 5 => 3 + 3 + 4 + 5 => 6 + 9 => 15
+  //
+  auto const input = std::vector<int>{0, 1, 2, 3, 4, 5};
+  auto const sum   = std::accumulate(
+    input.begin(), input.end(),
+    0,
+    BOOST_HOF_LIFT(integral_add));
+
+  REQUIRE(sum == 15);
+}
+```
+
+Then in the CMakeLists.txt file, simply do:
+```
+add_executable(
+  my-new-project_tests
+
+  ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp
+
+  # all we're doing is simply adding this line to the existing file
+  ${CMAKE_CURRENT_SOURCE_DIR}/test/lifting_add_test.cpp
+)
+```
+
+Now, assuming we've run CMake once before with the proper toolchain file,
+all we should need to do now is invoke:
+```
+cmake --build .
+ctest .
+```
+from the command line and this will both build all the tests and then run
+them.
+
+Expected output:
+```
+Test project .../build_debug
+    Start 1: my-new-project_tests:do u even lift?
+1/1 Test #1: my-new-project_tests:do u even lift? .....   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+my-new-project_tests    =   0.03 sec*proc (1 test)
+
+Total Test time (real) =   0.07 sec
+
+```
+
+For Windows/msvc users, you'll have to do all this from a Developer Command Prompt.
+Use `vcvarsall` to configure your specific environment.
