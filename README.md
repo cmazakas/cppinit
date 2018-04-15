@@ -12,6 +12,8 @@ It requires the following:
 
 Download Boost via `brew`, `pacman` or `vcpkg`. Because Ubuntu is usually so behind, simply download and build the source.
 
+For `cppinit` itself:
+
 1. Download and install the Go toolkit (1.10 was used at time of writing)
 2. `go get github.com/LeonineKing1199/cppinit`
 3. `cd $GOPATH/src/github.com/LeonineKing1199/cppinit`
@@ -205,3 +207,9 @@ Total Test time (real) =   0.07 sec
 
 For Windows/msvc users, you'll have to do all this from a Developer Command Prompt.
 Use `vcvarsall` to configure your specific environment.
+
+In the above example we chose to put the file under our testing directory. This isn't
+strictly necessary. `cppinit` sets default include paths that let you include anything
+from Boost, `./include/` and `./test/include/`. We also add a default directory
+`test/include/my-new-project/test/` so that one can also write a coupled set of tests with
+their library itself. This more done out of convenience than anything else.
